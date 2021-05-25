@@ -1,10 +1,11 @@
 import 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
-import React, {useState} from 'react';
-import { StyleSheet, Text, View, TextInput, Button } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TextInput, Button, ScrollView, Image,TouchableHighlight } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import axios from 'axios'
+
 
 export default function App() {
   const Stack = createStackNavigator();
@@ -22,55 +23,86 @@ export default function App() {
 
 //MARK:- Screens
 const SearchScreen = () => {
-  const apiKey = 'd222a0eb7c07fbec1861a7da1dd94b6c'
-  const dbURL = 'https://api.themoviedb.org/3/movie/550?'
+  const apiKey = 'b3070a5d3abfb7c241d2688d066914e7'
+  const dbURL = 'https://api.themoviedb.org/3/search/movie?'
+  async function search() {
+  }
+
   const navigation = useNavigation();
-  function onSubmitEditing() {
-    navigation.navigate('Results')
-  }
-  function search() {
-    axios(dbURL + "api_key=" + apiKey + "query=" + state.searchText).then(({ data }) => {
-      let results = data.Search
-      setState(prevState => {
-        return {...prevState, results: results}
+
+  function getMovies() {
+    axios(dbURL + "api_key=" + apiKey + "&query=" + state.searchText + "&language=en-US&page=1").then(({ data }) => {
+      let results : Result[] = data.results
+      navigation.navigate('Results', {
+        result: results
       })
+    }).catch(error => {
+      console.log(error)
     })
+
   }
-  const [state, setState] = useState ({
+  const [state, setState] = useState({
     searchText: '',
-    results: {}
+    results: []
   })
   return (
     <View style={styles.container}>
-      <Text >Enter a Movie Name....</Text>
+      <Text style={styles.text}>Enter a Movie Name....</Text>
       <TextInput
         style={{
           padding: 8,
           backgroundColor: '#f5f5f5'
         }}
-        value = {state.s}
+        value={state.searchText}
         returnKeyType='search'
-        onSubmitEditing={search}
-        onChangeText={text => setState( previousState => {
-          return{...previousState, searchText: text}
+        onSubmitEditing={
+          getMovies
+        }
+        onChangeText={text => setState(previousState => {
+          return { ...previousState, searchText: text }
         })} />
-        <Button title="Go to Results" 
-        onPress={onSubmitEditing}
-        />
+      <Button title="Go to Results"
+        onPress={getMovies}
+      />
     </View>
   );
 };
-const ResultsScreen = () => {
+const ResultsScreen = (props : any) => {
+  const navigation = useNavigation();
+
+  let response : Result[] = props.route.params.result
+  function navigateToDetials(movie: Result) {
+    navigation.navigate('Details', {movie: movie})
+  }
   return (
     <View style={styles.container}>
-      <Text>ResultsScreen</Text>
+      <ScrollView>
+       {
+         response.map(movie => (
+          <TouchableHighlight onPress={function h() {
+            navigation.navigate('Details', {movie: movie})
+          }} >
+          <View key={movie.id}
+          
+          >
+            <Image
+            source = {{uri: 'https://image.tmdb.org/t/p/w300' + movie.poster_path}}
+            style = {{width : 300, height: 300}}
+            />
+            <Text style={styles.text}>{movie.title}</Text>
+          </View>
+          </TouchableHighlight>
+       ))
+       }
+      </ScrollView>
     </View>
   );
 };
-const MovieScreen = () => {
+const MovieScreen = (props : any) => {
+  const movie : Result = props.route.params.movie
   return (
     <View style={styles.container}>
-      <Text>MovieScreen</Text>
+      <Text style={styles.text}>{movie.title}</Text>
     </View>
   );
 };
@@ -80,8 +112,27 @@ const MovieScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'green',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
+  text: {
+    color: 'white'
+  },
+  movieCell: {
+
+  }
 });
+
+export interface Result {
+  id: number;
+  overview: string;
+  popularity: number;
+  poster_path: string;
+  release_date: string;
+  title: string;
+  vote_average: number;
+  vote_count: number;
+}
+
+
